@@ -1,7 +1,8 @@
+const ethers = require("ethers")
+const fs = require("fs-extra")
 require("dotenv").config();
-const {gaslessTransaction, relayerServicePrivateKeyy} = require("./gaslessTransaction");
-
-const express = require('express');
+const ABI = require("./TestingAbi.json")
+const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 
@@ -11,24 +12,65 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(morgan("common"));
-app.get("/first", function(req, res) {
-    res.send("learning is fun and interesting...");
-});
 
-app.post('/gasless-transaction', async (req, res) => {
-    const {functionName, toAddress, value} = req.body;
+
+
+async function changeBalance(data) {
     try {
-        const receipt = await gaslessTransaction(functionName, toAddress, value);
-        res.status(200).json(receipt);
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+
+        const encryptedJsonKey = fs.readFileSync("./.encryptedKey.json", "utf8");
+        let wallet = ethers.Wallet.fromEncryptedJsonSync(encryptedJsonKey, process.env.PRIVATE_KEY_PASSWORD);
+        wallet = wallet.connect(provider)
+
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS,
+            ABI,
+            wallet);
+        const tx = await contract.changeBalance(data.from, data.value);
+        const receipt = await tx.wait();
+        if (receipt.status) {
+
+            return { success: true, tx, message: "Message sent" }
+        } else {
+            return { success: false, tx, message: "Message send failed" }
+        }
     } catch (error) {
-        res.status(500).json(error);
+        console.error(error);
+        return {
+            success: false, tx: {}, message: error?.reason ?? "ERROR_OCCURED"
+        }
+
     }
+}
+
+function verifyMessageWithEthers(message, signature) {
+    const signerAddress = ethers.verifyMessage(message, signature);
+    return signerAddress;
+}
+
+app.post("/send-message", async (req, res) => {
+    const data = req.body;
+    const signerAddress = verifyMessageWithEthers(JSON.stringify({
+        from: data.from,
+        amount: data.amount,
+    }), data.signature);
+    if (signerAddress.toString() === data.from.toString()) {
+        const tx = await changeBalance(data);
+        if (tx.success) {
+            res.status(200).send(tx)
+        } else {
+            res.status(500).send(tx)
+
+        }
+    } else {
+        res.status(400).send({ success: false, message: "Invalid signature" })
+    }
+})
+
+const server = app;
+const PORT = 5000 || process.env.PORT
+server.listen(5012, async () => {
+    console.log("server running on port ", PORT);
+
 });
 
-
-
-console.log(process.env.RPC_SEPOLIA);
-// console.log("loaded", relayerServicePrivateKeyy());
-app.listen(3001, () => {
-    console.log('Server listening on port 3000');
-});
