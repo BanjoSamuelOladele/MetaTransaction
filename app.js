@@ -30,9 +30,9 @@ async function changeBalance(data) {
         const receipt = await tx.wait();
         if (receipt.status) {
 
-            return { success: true, tx, message: "Message sent" }
+            return { success: true, tx, message: "sent" }
         } else {
-            return { success: false, tx, message: "Message send failed" }
+            return { success: false, tx, message: "failed" }
         }
     } catch (error) {
         console.error(error);
@@ -48,7 +48,7 @@ function verifyMessageWithEthers(message, signature) {
     return signerAddress;
 }
 
-app.post("/send-message", async (req, res) => {
+app.post("/change-balance", async (req, res) => {
     const data = req.body;
     const signerAddress = verifyMessageWithEthers(JSON.stringify({
         from: data.from,
