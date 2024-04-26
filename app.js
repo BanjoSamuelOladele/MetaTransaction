@@ -26,7 +26,7 @@ async function changeBalance(data) {
         const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS,
             ABI,
             wallet);
-        const tx = await contract.changeBalance(data.from, data.value);
+        const tx = await contract.changeBalance(data.from, data.amount);
         const receipt = await tx.wait();
         if (receipt.status) {
 
@@ -48,28 +48,33 @@ function verifyMessageWithEthers(message, signature) {
     return signerAddress;
 }
 
+
 app.post("/change-balance", async (req, res) => {
     const data = req.body;
     const signerAddress = verifyMessageWithEthers(JSON.stringify({
         from: data.from,
         amount: data.amount,
     }), data.signature);
+
     if (signerAddress.toString() === data.from.toString()) {
         const tx = await changeBalance(data);
         if (tx.success) {
             res.status(200).send(tx)
         } else {
             res.status(500).send(tx)
-
         }
     } else {
         res.status(400).send({ success: false, message: "Invalid signature" })
     }
 })
 
+app.get("/", async (req, res) => {
+    res.send("i am loading...");
+})
+
 const server = app;
 const PORT = 5000 || process.env.PORT
-server.listen(5012, async () => {
+server.listen(5000, async () => {
     console.log("server running on port ", PORT);
 
 });
