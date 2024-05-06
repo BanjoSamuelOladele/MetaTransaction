@@ -22,15 +22,21 @@ function setUpWallet() {
     return wallet;
 }
 
+function setUpContract(contractAddress, abi, wallet) {
+    return new ethers.Contract(contractAddress, abi, wallet);
+}
+
 
 async function changeBalance(data) {
     try {
         // const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
         let wallet = setUpWallet();
 
-        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS,
-            ABI,
-            wallet);
+        const contract = setUpContract(process.env.CONTRACT_ADDRESS, ABI, wallet);
+
+        // const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS,
+        //     ABI,
+        //     wallet);
         const tx = await contract.changeBalance(data.from, data.amount);
         const receipt = await tx.wait();
         if (receipt.status) {
