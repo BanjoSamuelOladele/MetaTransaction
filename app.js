@@ -24,9 +24,14 @@ function setUpWallet() {
 
 async function changeBalance(data) {
     try {
+
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        const encryptedJsonKey = fs.readFileSync("./.encryptedKey.json", "utf-8");
+        const wallet = ethers.Wallet.fromEncryptedJsonSync(encryptedJsonKey, process.env.PRIVATE_KEY_PASSWORD);
+        wallet = wallet.connect(provider);
         const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS,
             ABI,
-            setUpWallet());
+            wallet);
         const tx = await contract.changeBalance(data.from, data.amount);
         const receipt = await tx.wait();
         if (receipt.status) {
