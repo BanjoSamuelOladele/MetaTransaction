@@ -14,21 +14,19 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(morgan("common"));
 
 
-function setUpWallet(provider) {
+function setUpWallet() {
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
     const encryptedJsonKey = fs.readFileSync("./.encryptedKey.json", "utf8");
     let wallet = ethers.Wallet.fromEncryptedJsonSync(encryptedJsonKey, process.env.PRIVATE_KEY_PASSWORD);
     wallet = wallet.connect(provider);
-
     return wallet;
 }
 
 
 async function changeBalance(data) {
     try {
-        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-
-        
-        let wallet = setUpWallet(provider);
+        // const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        let wallet = setUpWallet();
 
         const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS,
             ABI,
